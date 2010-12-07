@@ -17,7 +17,7 @@ class Pats(puka.Client):
         self.basic_consume(self.resp_qname, no_ack=True,
                            callback=self.on_response)
 
-    def on_response(self, t, result, ud):
+    def on_response(self, t, result):
         corr_id = result['headers']['correlation_id']
         if corr_id in self.resp_map:
             fun = self.resp_map[corr_id]
@@ -38,10 +38,10 @@ class Pats(puka.Client):
         result = self.wait(t)
         qname = result['queue']
         t = self.queue_bind(exchange=self.exchange, queue=qname,
-                            routing_key=topic)
+                            binding_key=topic)
         self.wait(t)
 
-        def on_delivery(t, result, ud):
+        def on_delivery(t, result):
             reply_to = (result['headers'].get('reply_to'),
                         result['headers'].get('correlation_id'))
             callback(result['body'], reply_to, result['routing_key'])
@@ -52,10 +52,10 @@ class Pats(puka.Client):
         if isinstance(topic, tuple):
             return self.reply(topic, data, callback)
 
-        def on_basic_publish(t, result, ud):
+        def on_basic_publish(t, result):
             callback()
         if not callback:
-            self.basic_publish_async(exchange=self.exchange, routing_key=topic,
+            self.basic_publish(exchange=self.exchange, routing_key=topic,
                                      body=data)
         else:
             self.basic_publish(exchange=self.exchange, routing_key=topic,
